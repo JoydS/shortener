@@ -1,0 +1,41 @@
+services:
+  golang_api:  # Configuration for building the docker image for the service
+    container_name: shortener-api
+    build:
+      context: . # Use an image built from the specified dockerfile in the current directory.
+      dockerfile: docker/Dockerfile
+    tty: true
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    env_file: .env
+    environment: # Pass environment variables to the service
+      PORT: 8080
+    networks: # Networks to join (Services on the same network can communicate with each other using their name)
+      - main
+    volumes:
+      - .:/app
+    entrypoint: air --build.cmd="go build -o /app/cmd/shortener/shortener /app/cmd/shortener/." --build.bin="./cmd/shortener/shortener"
+
+  postgres:
+    container_name: shortener-postgres
+    image: postgres:13-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: shortener
+      POSTGRES_DB: shortener
+    volumes:
+      - shortener-postgres-volume:/var/lib/postgresql
+    networks:
+      - main
+
+volumes:
+  shortener-postgres-volume:
+    external: true
+
+networks:
+  main:
